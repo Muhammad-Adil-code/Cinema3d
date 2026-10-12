@@ -376,3 +376,65 @@ function FrontWall() {
     </group>
   );
 }
+
+function Ceiling() {
+  const count = 420;
+  const { positions, phases } = useMemo(() => {
+    const positions = new Float32Array(count * 3);
+    const phases = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = THREE.MathUtils.randFloat(ROOM.minX + 0.5, ROOM.maxX - 0.5);
+      positions[i * 3 + 1] = ROOM.height - 0.02;
+      positions[i * 3 + 2] = THREE.MathUtils.randFloat(ROOM.minZ + 2, ROOM.maxZ - 0.5);
+      phases[i] = Math.random() * Math.PI * 2;
+    }
+    return { positions, phases };
+  }, []);
+  const mat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        toneMapped: false,
+        uniforms: { uTime: { value: 0 }, uPixelRatio: { value: 1 } },
+        vertexShader: /* glsl */ `
+          attribute float phase;
+          uniform float uTime;
+          uniform float uPixelRatio;
+          varying float vTw;
+          void main() {
+            vTw = 0.55 + 0.45 * sin(uTime * (0.6 + fract(phase) * 1.4) + phase * 3.0);
+            vec4 mv = modelViewMatrix * vec4(position, 1.0);
+            gl_PointSize = (2.0 + fract(phase * 7.0) * 3.0) * uPixelRatio * (12.0 / -mv.z);
+            gl_Position = projectionMatrix * mv;
+          }`,
+        fragmentShader: /* glsl */ `
+          varying float vTw;
+          void main() {
+            float d = length(gl_PointCoord - 0.5);
+            float a = smoothstep(0.5, 0.0, d);
+            gl_FragColor = vec4(vec3(1.4, 1.35, 1.2) * vTw, a * vTw);
+          }`,
+      }),
+    [],
+  );
+  useFrame((state) => {
+    mat.uniforms.uTime.value = state.clock.elapsedTime;
+    mat.uniforms.uPixelRatio.value = state.gl.getPixelRatio();
+  });
+  return (
+    <group>
+      <mesh position={[0, ROOM.height, (ROOM.minZ + ROOM.maxZ) / 2]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[ROOM.maxX - ROOM.minX, ROOM.maxZ - ROOM.minZ]} />
+        <meshStandardMaterial color="#0a0910" roughness={1} />
+      </mesh>
+      <points material={mat} frustumCulled={false}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+          <bufferAttribute attach="attributes-phase" args={[phases, 1]} />
+        </bufferGeometry>
+      </points>
+    </group>
+  );
+}
