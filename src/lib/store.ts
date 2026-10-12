@@ -189,3 +189,7 @@ export function takenSet(showtimeId: string, bookings: Booking[]): Set<string> {
   for (const b of bookings) if (b.showtimeId === showtimeId) b.seats.forEach((id) => s.add(id));
   return s;
 }
+
+export function sortSeats(ids: string[]) {
+  return [...ids].sort((a, b) => (a[0] === b[0] ? parseInt(a.slice(1)) - parseInt(b.slice(1)) : a.localeCompare(b)));
+}
