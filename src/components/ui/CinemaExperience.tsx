@@ -112,3 +112,51 @@ export function CinemaExperience({ initialMode }: { initialMode: Mode }) {
     </div>
   );
 }
+
+function TopBar() {
+  const router = useRouter();
+  const mode = useCinema((s) => s.mode);
+  const movieId = useCinema((s) => s.movieId);
+  const showtimeId = useCinema((s) => s.showtimeId);
+  const setMode = useCinema((s) => s.setMode);
+  const hydrated = useHydrated();
+  const movie = getMovie(movieId);
+  // The default showtime depends on the visitor's clock, so only show it once we're in the browser.
+  const st = hydrated ? parseShowtime(showtimeId) : null;
+
+  return (
+    <header className="absolute inset-x-0 top-0 flex items-center justify-between gap-3 bg-gradient-to-b from-black/70 to-transparent p-3 sm:p-4">
+      <div className="pointer-events-auto flex min-w-0 items-center gap-3">
+        <Logo size="sm" />
+        <div className="hidden min-w-0 border-l border-white/15 pl-3 sm:block">
+          <p className="truncate text-sm font-semibold">{movie.title}</p>
+          <p className="truncate text-xs text-muted">
+            {HALL.name} · {HALL.format}
+            {st ? ` · ${formatTime(st.time)}` : ""}
+          </p>
+        </div>
+      </div>
+      <div className="pointer-events-auto flex items-center gap-2">
+        {mode === "explore" ? (
+          <>
+            <button className="btn btn-ghost btn-sm" onClick={() => router.push("/")}>
+              <ArrowLeft /> Go Back
+            </button>
+            <button className="btn btn-gold btn-sm" onClick={() => setMode("select")}>
+              <Ticket /> Book a Ticket
+            </button>
+          </>
+        ) : (
+          <>
+            <button className="btn btn-ghost btn-sm" onClick={() => setMode("explore")}>
+              <ArrowLeft /> Back to cinema
+            </button>
+            <button className="btn btn-ghost btn-sm hidden sm:inline-flex" onClick={() => router.push("/")}>
+              <Home /> Home
+            </button>
+          </>
+        )}
+      </div>
+    </header>
+  );
+}
