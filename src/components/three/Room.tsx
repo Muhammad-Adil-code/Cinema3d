@@ -79,3 +79,37 @@ function Stage() {
     </group>
   );
 }
+
+/** Amber LED strips on every riser along the aisles and side passages. */
+function StepLights() {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const strips = useMemo(() => {
+    const out: { x: number; y: number; z: number; w: number }[] = [];
+    for (let i = 1; i < TIERS.length; i++) {
+      const t = TIERS[i];
+      for (const x of [-AISLE_X, AISLE_X]) out.push({ x, y: t.y - 0.05, z: t.zStart - 0.005, w: 1.1 });
+      for (const x of [-9.95, 9.95]) out.push({ x, y: t.y - 0.05, z: t.zStart - 0.005, w: 1.6 });
+    }
+    // floor-level guide lights along the aisle edges
+    for (const r of ROWS) {
+      for (const x of [-AISLE_X - 0.66, -AISLE_X + 0.66, AISLE_X - 0.66, AISLE_X + 0.66]) {
+        out.push({ x, y: r.y + 0.03, z: r.z, w: 0.04 });
+      }
+    }
+    return out;
+  }, []);
+  useEffect(() => {
+    const m = new THREE.Matrix4();
+    strips.forEach((s, i) => {
+      m.compose(new THREE.Vector3(s.x, s.y, s.z), new THREE.Quaternion(), new THREE.Vector3(s.w, 1, 1));
+      ref.current!.setMatrixAt(i, m);
+    });
+    ref.current!.instanceMatrix.needsUpdate = true;
+  }, [strips]);
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, strips.length]} frustumCulled={false}>
+      <boxGeometry args={[1, 0.035, 0.03]} />
+      <meshBasicMaterial color={[2.4, 1.3, 0.35]} toneMapped={false} />
+    </instancedMesh>
+  );
+}
