@@ -183,3 +183,9 @@ export function isTaken(showtimeId: string, seatId: string, bookings: Booking[])
   if (presold(showtimeId).has(seatId)) return true;
   return bookings.some((b) => b.showtimeId === showtimeId && b.seats.includes(seatId));
 }
+
+export function takenSet(showtimeId: string, bookings: Booking[]): Set<string> {
+  const s = new Set(presold(showtimeId));
+  for (const b of bookings) if (b.showtimeId === showtimeId) b.seats.forEach((id) => s.add(id));
+  return s;
+}
