@@ -110,3 +110,107 @@ export function PanelOffset() {
 const EYE = 1.62;
 const RADIUS = 0.16;
 const SPEED = 2.6;
+
+/** First-person walking: WASD / arrows + drag-to-look, or the on-screen joystick on touch devices. */
+export function WalkControls() {
+  const nav = useCinema((s) => s.nav);
+  const view = useCinema((s) => s.view);
+  const active = nav === "walk" && view.kind === "overview";
+  const { camera, gl } = useThree();
+  const state = useRef({ yaw: 0, pitch: 0, pos: new THREE.Vector3(), y: 0, bob: 0, ready: false });
+  // Dev-only handle so automated browser tests can place the walker.
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production") (window as unknown as { __walker?: typeof state.current }).__walker = state.current;
+  }, []);
+
+  // Initialise from wherever the camera currently is.
+  useEffect(() => {
+    if (!active) {
+      state.current.ready = false;
+      return;
+    }
+    const s = state.current;
+    const fwd = new THREE.Vector3();
+    camera.getWorldDirection(fwd);
+    s.yaw = Math.atan2(-fwd.x, -fwd.z);
+    s.pitch = THREE.MathUtils.clamp(Math.asin(fwd.y), -0.6, 0.6);
+    s.pos.set(
+      THREE.MathUtils.clamp(camera.position.x, ROOM.minX + 0.5, ROOM.maxX - 0.5),
+      0,
+      THREE.MathUtils.clamp(camera.position.z, ROOM.minZ + 0.6, ROOM.maxZ - 0.5),
+    );
+    // If we came from high up (orbit), drop into the nearest aisle so we don't spawn inside a row.
+    if (camera.position.y - groundAt(s.pos.x, s.pos.z) > 3) s.pos.x = s.pos.x > 0 ? 5.04 : -5.04;
+    collide(s.pos);
+    s.y = camera.position.y;
+    s.ready = true;
+  }, [active, camera]);
+
+  // Drag to look.
+  useEffect(() => {
+    if (!active) return;
+    const el = gl.domElement;
+    let dragging = false;
+    let lx = 0;
+    let ly = 0;
+    const down = (e: PointerEvent) => {
+      dragging = true;
+      lx = e.clientX;
+      ly = e.clientY;
+    };
+    const move = (e: PointerEvent) => {
+      if (!dragging) return;
+      const k = e.pointerType === "touch" ? 0.006 : 0.0042;
+      state.current.yaw -= (e.clientX - lx) * k;
+      state.current.pitch = THREE.MathUtils.clamp(state.current.pitch - (e.clientY - ly) * k, -1.2, 1.2);
+      lx = e.clientX;
+      ly = e.clientY;
+    };
+    const up = () => (dragging = false);
+    el.addEventListener("pointerdown", down);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    return () => {
+      el.removeEventListener("pointerdown", down);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+  }, [active, gl]);
+
+  useFrame((_, dt) => {
+    const s = state.current;
+    if (!active || !s.ready) return;
+    dt = Math.min(dt, 0.05);
+    const exiting = useCinema.getState().exiting;
+    // After stepping through a door, keep gliding forward while the screen fades.
+    const fwdIn = exiting ? 0.6 : THREE.MathUtils.clamp(walkInput.forward + walkInput.joyY, -1, 1);
+    const sideIn = exiting ? 0 : THREE.MathUtils.clamp(walkInput.strafe + walkInput.joyX, -1, 1);
+    const speed = SPEED * (walkInput.sprint ? 1.9 : 1);
+    const sin = Math.sin(s.yaw);
+    const cos = Math.cos(s.yaw);
+    const dx = (-sin * fwdIn + cos * sideIn) * speed * dt;
+    const dz = (-cos * fwdIn - sin * sideIn) * speed * dt;
+    s.pos.x += dx;
+    s.pos.z += dz;
+    collide(s.pos);
+
+    // Walking into a doorway leaves the hall.
+    const floor = groundAt(s.pos.x, s.pos.z);
+    for (const ex of EXITS) {
+      if (Math.hypot(s.pos.x - ex.x, s.pos.z - ex.z) < 0.6 && Math.abs(floor - ex.y) < 0.5) {
+        if (!useCinema.getState().exiting) useCinema.getState().exit();
+        break;
+      }
+    }
+
+    const moving = Math.abs(fwdIn) + Math.abs(sideIn) > 0.05;
+    if (moving) s.bob += dt * speed * 3.2;
+    const target = groundAt(s.pos.x, s.pos.z) + EYE + (moving ? Math.sin(s.bob) * 0.025 : 0);
+    s.y = THREE.MathUtils.damp(s.y, target, 9, dt);
+
+    camera.position.set(s.pos.x, s.y, s.pos.z);
+    camera.rotation.set(s.pitch, s.yaw, 0, "YXZ");
+  });
+
+  return null;
+}
