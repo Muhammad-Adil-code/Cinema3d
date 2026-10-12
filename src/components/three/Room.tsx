@@ -336,3 +336,14 @@ function BackWall() {
     </group>
   );
 }
+
+function curtainGeometry(width: number, height: number, folds: number, depth: number) {
+  const geo = new THREE.PlaneGeometry(width, height, folds * 8, 1);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const u = (pos.getX(i) + width / 2) / width;
+    pos.setZ(i, Math.sin(u * folds * Math.PI * 2) * depth + Math.sin(u * folds * 5.3) * depth * 0.3);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
