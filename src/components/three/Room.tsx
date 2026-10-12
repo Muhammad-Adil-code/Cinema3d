@@ -196,3 +196,18 @@ function Sconce({ x, y, z, side }: { x: number; y: number; z: number; side: numb
     </group>
   );
 }
+
+function ExitSign({ position, rotationY = 0 }: { position: [number, number, number]; rotationY?: number }) {
+  return (
+    <group position={position} rotation={[0, rotationY, 0]}>
+      <mesh>
+        <boxGeometry args={[0.7, 0.26, 0.06]} />
+        <meshStandardMaterial color="#0a120c" />
+      </mesh>
+      <Text position={[0, 0, 0.035]} fontSize={0.16} letterSpacing={0.12} anchorX="center" anchorY="middle">
+        EXIT
+        <meshBasicMaterial color={[0.25, 2.6, 0.8]} toneMapped={false} />
+      </Text>
+    </group>
+  );
+}
