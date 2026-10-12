@@ -77,3 +77,16 @@ export function fabricTexture() {
 }
 
 let glow: THREE.CanvasTexture | null = null;
+/** Soft radial falloff for light washes on walls. */
+export function glowTexture() {
+  if (glow) return glow;
+  const [c, g] = canvas(128);
+  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, "rgba(255,255,255,1)");
+  grad.addColorStop(0.35, "rgba(255,255,255,0.35)");
+  grad.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 128, 128);
+  glow = new THREE.CanvasTexture(c);
+  return glow;
+}
