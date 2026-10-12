@@ -129,3 +129,12 @@ function Ticket() {
     </main>
   );
 }
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-widest text-muted">{label}</p>
+      <p className="mt-0.5 font-semibold">{value}</p>
+    </div>
+  );
+}
