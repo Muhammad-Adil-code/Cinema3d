@@ -211,3 +211,103 @@ function ExitSign({ position, rotationY = 0 }: { position: [number, number, numb
     </group>
   );
 }
+
+/**
+ * Double exit doors. They swing open as the camera approaches, revealing the
+ * lit lobby beyond; clicking them (or walking through) leaves the hall.
+ */
+function Door({ position, rotationY }: { position: [number, number, number]; rotationY: number }) {
+  const left = useRef<THREE.Group>(null);
+  const right = useRef<THREE.Group>(null);
+  const lobby = useRef<THREE.MeshBasicMaterial>(null);
+  const spill = useRef<THREE.MeshBasicMaterial>(null);
+  const open = useRef(0);
+  const centre = useMemo(() => new THREE.Vector3(position[0], position[1] + 1.2, position[2]), [position]);
+  const glow = useMemo(() => glowTexture(), []);
+  const lobbyTex = useMemo(() => lobbyTexture(), []);
+  const [hover, setHover] = useState(false);
+
+  useEffect(() => {
+    if (!hover) return;
+    document.body.style.cursor = "pointer";
+    return () => {
+      document.body.style.cursor = "";
+    };
+  }, [hover]);
+
+  useFrame((state, dt) => {
+    const near = state.camera.position.distanceTo(centre) < 3.6 || hover;
+    open.current = THREE.MathUtils.damp(open.current, near ? 1 : 0, 4, Math.min(dt, 0.1));
+    const o = open.current;
+    if (left.current) left.current.rotation.y = -o * 1.35;
+    if (right.current) right.current.rotation.y = o * 1.35;
+    if (lobby.current) lobby.current.color.setScalar(0.04 + o * 0.85);
+    if (spill.current) spill.current.opacity = o * 0.35;
+  });
+
+  const leaf = (
+    <>
+      <mesh position={[0.44, 1.2, 0.02]}>
+        <boxGeometry args={[0.88, 2.4, 0.06]} />
+        <meshStandardMaterial color="#141118" roughness={0.45} />
+      </mesh>
+      <mesh position={[0.78, 1.05, 0.07]}>
+        <boxGeometry args={[0.03, 0.5, 0.03]} />
+        <meshStandardMaterial color="#9a9aa4" metalness={0.9} roughness={0.25} />
+      </mesh>
+    </>
+  );
+
+  return (
+    <group
+      position={position}
+      rotation={[0, rotationY, 0]}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (e.delta <= 6) useCinema.getState().exit();
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        setHover(true);
+      }}
+      onPointerOut={() => setHover(false)}
+    >
+      {/* the lit lobby seen through the doorway */}
+      <mesh position={[0, 1.2, -0.01]}>
+        <planeGeometry args={[1.8, 2.4]} />
+        <meshBasicMaterial ref={lobby} map={lobbyTex} toneMapped={false} />
+      </mesh>
+      {/* frame */}
+      {[-0.95, 0.95].map((x) => (
+        <mesh key={x} position={[x, 1.25, 0.03]}>
+          <boxGeometry args={[0.1, 2.5, 0.1]} />
+          <meshStandardMaterial color="#26222c" roughness={0.6} />
+        </mesh>
+      ))}
+      <mesh position={[0, 2.47, 0.03]}>
+        <boxGeometry args={[2, 0.1, 0.1]} />
+        <meshStandardMaterial color="#26222c" roughness={0.6} />
+      </mesh>
+      <group ref={left} position={[-0.9, 0, 0]}>
+        {leaf}
+      </group>
+      <group ref={right} position={[0.9, 0, 0]} scale={[-1, 1, 1]}>
+        {leaf}
+      </group>
+      {/* light spilling onto the floor */}
+      <mesh position={[0, 0.02, 1.1]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[2.6, 2.4]} />
+        <meshBasicMaterial ref={spill} map={glow} color="#ffcf8a" transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <ExitSign position={[0, 2.8, 0.06]} />
+      {hover && (
+        <Html position={[0, 2.1, 0.3]} center pointerEvents="none" style={{ pointerEvents: "none" }}>
+          <div className="seat-tag">
+            <strong>EXIT</strong>
+            <span>Leave the hall → Home</span>
+          </div>
+        </Html>
+      )}
+    </group>
+  );
+}
