@@ -154,3 +154,22 @@ function SeatSet({ seats, recliner, interactive }: { seats: Seat[]; recliner: bo
 
 const standardSeats = SEATS.filter((s) => s.category !== "recliner");
 const reclinerSeats = SEATS.filter((s) => s.category === "recliner");
+
+export function Seats({ interactive = true }: { interactive?: boolean }) {
+  const hovered = useCinema((s) => s.hovered);
+  useEffect(() => {
+    document.body.style.cursor = hovered ? "pointer" : "";
+    return () => {
+      document.body.style.cursor = "";
+    };
+  }, [hovered]);
+
+  return (
+    <group>
+      <SeatSet seats={standardSeats} recliner={false} interactive={interactive} />
+      <SeatSet seats={reclinerSeats} recliner interactive={interactive} />
+      {interactive && <SeatMarkers />}
+      {interactive && <HoverTag />}
+    </group>
+  );
+}
