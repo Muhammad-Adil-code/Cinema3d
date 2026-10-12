@@ -290,3 +290,57 @@ function InspectCard() {
     </div>
   );
 }
+
+function SeatViewBar() {
+  const view = useCinema((s) => s.view);
+  const mode = useCinema((s) => s.mode);
+  const selected = useCinema((s) => s.selected);
+  const showtimeId = useCinema((s) => s.showtimeId);
+  const bookings = useCinema((s) => s.bookings);
+  const setView = useCinema((s) => s.setView);
+  const toggleSeat = useCinema((s) => s.toggleSeat);
+  if (view.kind !== "seat") return null;
+  const seat = SEAT_BY_ID.get(view.seatId);
+  if (!seat) return null;
+  const taken = isTaken(showtimeId, seat.id, bookings);
+  const isSel = selected.includes(seat.id);
+
+  const book = () => {
+    const st = useCinema.getState();
+    st.setMode("select");
+    if (!st.selected.includes(seat.id)) st.toggleSeat(seat.id);
+  };
+
+  return (
+    <div className={`absolute inset-x-0 flex justify-center px-4 ${mode === "select" ? "top-20 lg:right-[400px]" : "bottom-6"}`}>
+      <div className="glass pointer-events-auto flex flex-wrap items-center justify-center gap-2 rounded-2xl px-4 py-3 fade-up">
+        <p className="text-sm">
+          Sitting in <b className="text-gold">{seat.id}</b>
+          <span className="text-muted">
+            {" "}
+            · {CATEGORY_LABEL[seat.category]} · drag to look around
+          </span>
+        </p>
+        <button className="btn btn-ghost btn-sm" onClick={() => setView({ kind: "overview" })}>
+          <ArrowLeft /> Stand up
+        </button>
+        {!taken &&
+          (mode === "explore" ? (
+            <button className="btn btn-gold btn-sm" onClick={book}>
+              <Ticket /> Book this seat
+            </button>
+          ) : (
+            <button className={`btn btn-sm ${isSel ? "btn-ghost" : "btn-gold"}`} onClick={() => toggleSeat(seat.id)}>
+              {isSel ? (
+                <>
+                  <Check /> Selected
+                </>
+              ) : (
+                "Select this seat"
+              )}
+            </button>
+          ))}
+      </div>
+    </div>
+  );
+}
