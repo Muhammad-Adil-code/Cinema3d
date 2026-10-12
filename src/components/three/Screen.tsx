@@ -183,3 +183,139 @@ function screenLight(movie: Movie, t: number, out: THREE.Color) {
   out.setRGB(base[0], base[1], base[2]);
   return fade;
 }
+
+export function Screen() {
+  const movieId = useCinema((s) => s.movieId);
+  const videoUrl = useCinema((s) => s.videoUrl);
+  const movie = getMovie(movieId);
+
+  const screenGeo = useMemo(() => curvedPlane(SCREEN.width, SCREEN.height), []);
+  const frameGeo = useMemo(() => curvedPlane(SCREEN.width + 0.5, SCREEN.height + 0.45), []);
+  const title = useMemo(() => titleTexture(movie), [movie]);
+  useEffect(() => () => title.dispose(), [title]);
+
+  const material = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        vertexShader: movieVertex,
+        fragmentShader: movieFragment,
+        toneMapped: false,
+        uniforms: {
+          uTime: { value: 0 },
+          uC0: { value: new THREE.Color() },
+          uC1: { value: new THREE.Color() },
+          uC2: { value: new THREE.Color() },
+          uTitle: { value: null },
+          uAspect: { value: ASPECT },
+        },
+      }),
+    [],
+  );
+
+  useEffect(() => {
+    material.uniforms.uC0.value.setRGB(...movie.palette[0]);
+    material.uniforms.uC1.value.setRGB(...movie.palette[1]);
+    material.uniforms.uC2.value.setRGB(...movie.palette[2]);
+    material.uniforms.uTitle.value = title;
+  }, [material, movie, title]);
+
+  // --- optional user video -------------------------------------------------
+  // The element is only *created* during render (inert, never played there);
+  // playback starts in the effect and is torn down completely — sound
+  // included — when the upload is removed, ends, or the page is left.
+  const media = useMemo(() => {
+    if (!videoUrl) return null;
+    const v = document.createElement("video");
+    v.playsInline = true;
+    v.preload = "auto";
+    const tex = new THREE.VideoTexture(v);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return { video: v, tex };
+  }, [videoUrl]);
+  useEffect(() => {
+    if (!media) return;
+    const { video: v, tex } = media;
+    v.src = videoUrl!;
+    // Play once; when it finishes the default trailer comes back.
+    const onEnded = () => useCinema.getState().endVideo();
+    v.addEventListener("ended", onEnded);
+    v.play().catch(() => {
+      v.muted = true;
+      v.play().catch(() => {});
+    });
+    return () => {
+      v.removeEventListener("ended", onEnded);
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
+      tex.dispose();
+    };
+  }, [media, videoUrl]);
+  const video = media?.video ?? null;
+  const videoTex = media?.tex ?? null;
+  const sampler = useMemo(() => {
+    const c = document.createElement("canvas");
+    c.width = c.height = 4;
+    return c.getContext("2d", { willReadFrequently: true })!;
+  }, []);
+  const lastSample = useRef(0);
+
+  const lightRef = useRef<THREE.RectAreaLight>(null);
+  const start = useRef<number | null>(null);
+
+  useFrame((state) => {
+    const now = state.clock.elapsedTime;
+    if (start.current === null) start.current = now;
+    const t = now - start.current;
+    material.uniforms.uTime.value = t;
+
+    let level: number;
+    if (video && video.readyState >= 2) {
+      if (now - lastSample.current > 0.15) {
+        lastSample.current = now;
+        sampler.drawImage(video, 0, 0, 4, 4);
+        const d = sampler.getImageData(0, 0, 4, 4).data;
+        let r = 0, g = 0, b = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          r += d[i];
+          g += d[i + 1];
+          b += d[i + 2];
+        }
+        const n = (d.length / 4) * 255;
+        lighting.screen.lerp(new THREE.Color(r / n, g / n, b / n), 0.6);
+      }
+      level = 1;
+    } else {
+      const target = new THREE.Color();
+      level = screenLight(movie, t, target);
+      lighting.screen.lerp(target, 0.15);
+    }
+    lighting.screenLevel = THREE.MathUtils.lerp(lighting.screenLevel, level, 0.15);
+
+    if (lightRef.current) {
+      lightRef.current.color.copy(lighting.screen).multiplyScalar(1.6).addScalar(0.05);
+      lightRef.current.intensity = 1.2 + lighting.screenLevel * 7;
+    }
+  });
+
+  return (
+    <group>
+      <mesh geometry={frameGeo} position={[SCREEN_CENTER[0], SCREEN_CENTER[1], SCREEN.z - 0.04]}>
+        <meshStandardMaterial color="#020203" roughness={1} />
+      </mesh>
+      <mesh geometry={screenGeo} position={SCREEN_CENTER} material={videoTex ? undefined : material}>
+        {videoTex && <meshBasicMaterial map={videoTex} toneMapped={false} />}
+      </mesh>
+      <rectAreaLight
+        ref={(l) => {
+          lightRef.current = l;
+          l?.lookAt(0, SCREEN_CENTER[1] - 1.5, 0);
+        }}
+        position={[0, SCREEN_CENTER[1], SCREEN.z + 0.6]}
+        width={SCREEN.width}
+        height={SCREEN.height}
+      />
+      <ProjectorBeam />
+    </group>
+  );
+}
