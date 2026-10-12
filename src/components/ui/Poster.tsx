@@ -112,3 +112,56 @@ function LastCaravan() {
     </>
   );
 }
+
+function LahoreNights() {
+  const r = rng(3);
+  const stars = Array.from({ length: 45 }, () => ({ x: r() * 400, y: r() * 150, s: 0.5 + r() * 1.2 }));
+  const lanterns = Array.from({ length: 9 }, (_, i) => ({ x: 20 + i * 45, y: 60 + Math.sin(i) * 10 }));
+  return (
+    <>
+      <defs>
+        <linearGradient id="ln-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#050c1c" />
+          <stop offset="0.65" stopColor="#1a2550" />
+          <stop offset="1" stopColor="#c2185b" />
+        </linearGradient>
+        <radialGradient id="ln-moon" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stopColor="#fff5d6" />
+          <stop offset="0.45" stopColor="#ffe9a8" stopOpacity="0.5" />
+          <stop offset="1" stopColor="#ffe9a8" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <rect width="400" height="300" fill="url(#ln-sky)" />
+      {stars.map((s, i) => (
+        <circle key={i} cx={s.x} cy={s.y} r={s.s} fill="#fff" opacity="0.7" />
+      ))}
+      <circle cx="310" cy="80" r="44" fill="url(#ln-moon)" />
+      <circle cx="310" cy="80" r="17" fill="#fff3cf" />
+      <path d="M0 62 Q100 82 200 64 T400 66" stroke="#ffb300" strokeOpacity="0.35" fill="none" />
+      {lanterns.map((l, i) => (
+        <g key={i}>
+          <circle cx={l.x} cy={l.y + 10} r="7" fill="#ffb300" opacity="0.18" />
+          <rect x={l.x - 2.5} y={l.y + 6} width="5" height="8" rx="2" fill="#ffc94d" />
+        </g>
+      ))}
+      {/* mosque silhouette: three domes, four minarets */}
+      <g fill="#07070f">
+        <rect x="110" y="215" width="180" height="85" />
+        <path d="M200 215 q0 -50 -34 -56 q34 -14 34 -34 q0 20 34 34 q-34 6 -34 56z" />
+        <ellipse cx="200" cy="200" rx="42" ry="36" />
+        <rect x="198" y="148" width="4" height="18" />
+        <ellipse cx="148" cy="212" rx="22" ry="18" />
+        <ellipse cx="252" cy="212" rx="22" ry="18" />
+        {[100, 132, 268, 300].map((x, i) => (
+          <g key={x}>
+            <rect x={x - 5} y={i % 3 === 0 ? 140 : 170} width="10" height="160" />
+            <path d={`M${x - 8} ${i % 3 === 0 ? 140 : 170} h16 l-8 -16z`} />
+          </g>
+        ))}
+        <path d="M0 260 h70 v-30 h20 v30 h30 v40 H0z" />
+        <path d="M300 250 h40 v-20 h18 v20 h42 v50 H300z" />
+      </g>
+      <rect y="292" width="400" height="8" fill="#c2185b" opacity="0.5" />
+    </>
+  );
+}
