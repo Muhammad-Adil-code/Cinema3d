@@ -245,3 +245,48 @@ function DockButton({ active, onClick, label, children }: { active: boolean; onC
     </button>
   );
 }
+
+function InspectCard() {
+  const inspect = useCinema((s) => s.inspect)!;
+  const showtimeId = useCinema((s) => s.showtimeId);
+  const bookings = useCinema((s) => s.bookings);
+  const setView = useCinema((s) => s.setView);
+  const setInspect = useCinema((s) => s.setInspect);
+  const seat = SEAT_BY_ID.get(inspect);
+  if (!seat) return null;
+  const taken = isTaken(showtimeId, seat.id, bookings);
+
+  const book = () => {
+    const st = useCinema.getState();
+    st.setMode("select");
+    if (!st.selected.includes(seat.id)) st.toggleSeat(seat.id);
+  };
+
+  return (
+    <div className="absolute inset-x-0 bottom-36 flex justify-center px-4">
+      <div className="glass pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl p-3 fade-up">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gold font-display text-2xl text-[#1a1203]">{seat.id}</div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">
+            Row {seat.row}, seat {seat.num}
+          </p>
+          <p className="text-xs text-muted">
+            {CATEGORY_LABEL[seat.category]} · {pkr(PRICES[seat.category])}
+            {taken && <span className="text-[#ff8f8f]"> · booked for this show</span>}
+          </p>
+        </div>
+        <button className="btn btn-ghost btn-sm" onClick={() => setView({ kind: "seat", seatId: seat.id })}>
+          <Armchair /> Sit
+        </button>
+        {!taken && (
+          <button className="btn btn-gold btn-sm" onClick={book}>
+            <Ticket /> Book
+          </button>
+        )}
+        <button className="icon-btn icon-btn-sm text-muted" onClick={() => setInspect(null)} aria-label="Close">
+          <X />
+        </button>
+      </div>
+    </div>
+  );
+}
