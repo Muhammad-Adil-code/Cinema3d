@@ -132,3 +132,36 @@ export interface Box2 {
   minZ: number;
   maxZ: number;
 }
+
+export const OBSTACLES: Box2[] = ROWS.flatMap((r) => {
+  const pitch = r.recliner ? RECLINER_PITCH : SEAT_PITCH;
+  const out: Box2[] = [];
+  let block: Seat[] = [];
+  const flush = () => {
+    if (!block.length) return;
+    out.push({
+      minX: block[0].x - pitch / 2,
+      maxX: block[block.length - 1].x + pitch / 2,
+      minZ: block[0].z - (r.recliner ? 0.45 : 0.36),
+      maxZ: block[0].z + (r.recliner ? 0.5 : 0.34),
+    });
+    block = [];
+  };
+  r.seats.forEach((s, i) => {
+    if (i > 0 && s.x - r.seats[i - 1].x > pitch * 1.5) flush();
+    block.push(s);
+  });
+  flush();
+  return out;
+});
+
+/** Exit doors (centre of the doorway at floor level). Walking into one leaves the hall. */
+export const FRONT_DOOR_Z = -9.4;
+export interface Exit {
+  id: string;
+  x: number;
+  y: number;
+  z: number;
+  /** Rotation that turns the door's local +Z to face into the room. */
+  rotationY: number;
+}
