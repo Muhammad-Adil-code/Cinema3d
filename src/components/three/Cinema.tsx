@@ -86,3 +86,13 @@ export default function Cinema({ onReady }: { onReady?: () => void }) {
     </Canvas>
   );
 }
+
+export function Effects({ mobile }: { mobile: boolean }) {
+  return (
+    <EffectComposer multisampling={mobile ? 0 : 4}>
+      <Bloom mipmapBlur intensity={0.85} luminanceThreshold={0.85} luminanceSmoothing={0.25} />
+      <Vignette offset={0.28} darkness={0.65} />
+      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+    </EffectComposer>
+  );
+}
