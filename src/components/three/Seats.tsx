@@ -173,3 +173,37 @@ export function Seats({ interactive = true }: { interactive?: boolean }) {
     </group>
   );
 }
+
+/** Golden halo + floating label over every selected (or inspected) seat. */
+function SeatMarkers() {
+  const mode = useCinema((s) => s.mode);
+  const selected = useCinema((s) => s.selected);
+  const inspect = useCinema((s) => s.inspect);
+  const view = useCinema((s) => s.view);
+  const ids = mode === "select" ? selected : inspect ? [inspect] : [];
+  const tex = useMemo(() => glowTexture(), []);
+  return (
+    <group>
+      {ids.map((id) => {
+        const s = SEAT_BY_ID.get(id);
+        if (!s) return null;
+        const sitting = view.kind === "seat" && view.seatId === id;
+        return (
+          <group key={id} position={[s.x, s.y, s.z]}>
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+              <planeGeometry args={[1.3, 1.3]} />
+              <meshBasicMaterial map={tex} color={[2.4, 1.7, 0.5]} transparent blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+            </mesh>
+            {!sitting && (
+              <Billboard position={[0, 1.75, 0]}>
+                <Html center zIndexRange={[20, 0]} pointerEvents="none" wrapperClass="no-pe" style={{ pointerEvents: "none" }}>
+                  <div className="seat-pin">{id}</div>
+                </Html>
+              </Billboard>
+            )}
+          </group>
+        );
+      })}
+    </group>
+  );
+}
