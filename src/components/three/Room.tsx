@@ -176,3 +176,23 @@ function SideWall({ side }: { side: 1 | -1 }) {
     </group>
   );
 }
+
+function Sconce({ x, y, z, side }: { x: number; y: number; z: number; side: number }) {
+  const washRef = useRef<THREE.MeshBasicMaterial>(null);
+  const tex = useMemo(() => glowTexture(), []);
+  useFrame(() => {
+    if (washRef.current) washRef.current.opacity = 0.18 + lighting.house * 0.55;
+  });
+  return (
+    <group position={[x, y, z]}>
+      <mesh>
+        <boxGeometry args={[0.12, 0.1, 0.36]} />
+        <meshBasicMaterial color={[2.2, 1.4, 0.7]} toneMapped={false} />
+      </mesh>
+      <mesh position={[side * 0.06, 0.4, 0]} rotation={[0, -side * Math.PI / 2, 0]}>
+        <planeGeometry args={[1.6, 2.4]} />
+        <meshBasicMaterial ref={washRef} map={tex} color="#ffb070" transparent blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
