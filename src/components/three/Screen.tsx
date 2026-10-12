@@ -55,3 +55,8 @@ function titleTexture(movie: Movie) {
   tex.anisotropy = 8;
   return tex;
 }
+
+const movieVertex = /* glsl */ `
+  varying vec2 vUv;
+  void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+`;
