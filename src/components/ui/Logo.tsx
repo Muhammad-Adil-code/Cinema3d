@@ -14,3 +14,12 @@ export function LogoMark({ className = "h-8 w-8" }: { className?: string }) {
     </svg>
   );
 }
+
+export function Logo({ size = "md" }: { size?: "sm" | "md" }) {
+  return (
+    <Link href="/" className="flex items-center gap-2.5" aria-label="CineSeat home">
+      <LogoMark className={size === "sm" ? "h-7 w-7" : "h-8 w-8"} />
+      <span className={`font-display tracking-wider text-gold ${size === "sm" ? "hidden text-2xl sm:inline" : "text-3xl"}`}>CineSeat</span>
+    </Link>
+  );
+}
