@@ -70,3 +70,87 @@ const AVAILABLE_COLOR = { standard: "#a3263a", premium: "#c9343f", recliner: "#8
 const TAKEN = "#2a2a31";
 const SELECTED = "#f5c451";
 const HOVER = "#ff9a6a";
+
+function SeatSet({ seats, recliner, interactive }: { seats: Seat[]; recliner: boolean; interactive: boolean }) {
+  const fabricRef = useRef<THREE.InstancedMesh>(null);
+  const frameRef = useRef<THREE.InstancedMesh>(null);
+  const geo = useMemo(() => (recliner ? reclinerSeat() : standardSeat()), [recliner]);
+
+  const mode = useCinema((s) => s.mode);
+  const selected = useCinema((s) => s.selected);
+  const hovered = useCinema((s) => s.hovered);
+  const inspect = useCinema((s) => s.inspect);
+  const showtimeId = useCinema((s) => s.showtimeId);
+  const bookings = useCinema((s) => s.bookings);
+  const taken = useMemo(() => takenSet(showtimeId, bookings), [showtimeId, bookings]);
+
+  useEffect(() => {
+    const m = new THREE.Matrix4();
+    seats.forEach((s, i) => {
+      m.makeTranslation(s.x, s.y, s.z);
+      fabricRef.current!.setMatrixAt(i, m);
+      frameRef.current!.setMatrixAt(i, m);
+    });
+    fabricRef.current!.instanceMatrix.needsUpdate = true;
+    frameRef.current!.instanceMatrix.needsUpdate = true;
+    fabricRef.current!.computeBoundingSphere();
+    frameRef.current!.computeBoundingSphere();
+  }, [seats]);
+
+  useEffect(() => {
+    const c = new THREE.Color();
+    seats.forEach((s, i) => {
+      let hex: string;
+      if (mode === "select") {
+        if (selected.includes(s.id)) hex = SELECTED;
+        else if (taken.has(s.id)) hex = TAKEN;
+        else if (hovered === s.id) hex = HOVER;
+        else hex = AVAILABLE_COLOR[s.category];
+      } else {
+        if (inspect === s.id) hex = SELECTED;
+        else if (hovered === s.id) hex = HOVER;
+        else hex = EXPLORE_COLOR[s.category];
+      }
+      fabricRef.current!.setColorAt(i, c.set(hex));
+    });
+    fabricRef.current!.instanceColor!.needsUpdate = true;
+  }, [seats, mode, selected, hovered, inspect, taken]);
+
+  const onMove = (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation();
+    if (e.instanceId === undefined) return;
+    const id = seats[e.instanceId].id;
+    if (useCinema.getState().hovered !== id) useCinema.getState().setHovered(id);
+  };
+  const onOut = () => useCinema.getState().setHovered(null);
+  const onClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    if (e.delta > 6 || e.instanceId === undefined) return;
+    const id = seats[e.instanceId].id;
+    const st = useCinema.getState();
+    if (st.mode === "select") st.toggleSeat(id);
+    else st.setInspect(st.inspect === id ? null : id);
+  };
+
+  return (
+    <group>
+      <instancedMesh
+        ref={fabricRef}
+        args={[geo.fabric, undefined, seats.length]}
+        {...(interactive ? { onPointerMove: onMove, onPointerOut: onOut, onClick } : { raycast: () => null })}
+      >
+        <meshStandardMaterial roughness={recliner ? 0.42 : 0.85} metalness={recliner ? 0.05 : 0} />
+      </instancedMesh>
+      <instancedMesh
+        ref={frameRef}
+        args={[geo.frame, undefined, seats.length]}
+        {...(interactive ? { onPointerMove: onMove, onPointerOut: onOut, onClick } : { raycast: () => null })}
+      >
+        <meshStandardMaterial color={recliner ? "#151018" : "#1b1a1f"} roughness={0.45} metalness={0.35} />
+      </instancedMesh>
+    </group>
+  );
+}
+
+const standardSeats = SEATS.filter((s) => s.category !== "recliner");
+const reclinerSeats = SEATS.filter((s) => s.category === "recliner");
