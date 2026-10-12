@@ -71,3 +71,44 @@ function NeonMonsoon() {
     </>
   );
 }
+
+function LastCaravan() {
+  const camels = [
+    [90, 228, 1],
+    [140, 232, 0.92],
+    [185, 236, 0.85],
+    [225, 239, 0.78],
+  ] as const;
+  return (
+    <>
+      <defs>
+        <linearGradient id="lc-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#3a1206" />
+          <stop offset="0.55" stopColor="#c2501f" />
+          <stop offset="1" stopColor="#ffcf7a" />
+        </linearGradient>
+        <radialGradient id="lc-sun" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stopColor="#fff2c4" />
+          <stop offset="0.5" stopColor="#ffd27a" />
+          <stop offset="1" stopColor="#ffd27a" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <rect width="400" height="300" fill="url(#lc-sky)" />
+      <circle cx="270" cy="170" r="70" fill="url(#lc-sun)" />
+      <circle cx="270" cy="170" r="30" fill="#fff0c0" />
+      <path d="M0 210 Q80 180 160 205 T330 195 T400 200 V300 H0Z" fill="#a8461c" />
+      <path d="M0 240 Q100 215 200 240 T400 230 V300 H0Z" fill="#6e2a10" />
+      {camels.map(([x, y, s], i) => (
+        <g key={i} transform={`translate(${x} ${y}) scale(${s})`} fill="#2a0d04">
+          <path d="M0 0 q6 -16 16 -14 q6 -12 14 0 q6 -2 10 -10 l4 -2 l2 6 l-6 6 q-2 10 -8 14 v16 h-3 v-14 h-14 v14 h-3 v-16 q-8 0 -12 -4z" />
+        </g>
+      ))}
+      <g fill="#2a0d04" transform="translate(60 230)">
+        <circle cx="0" cy="-22" r="3" />
+        <rect x="-2" y="-19" width="4" height="14" />
+        <rect x="-2" y="-5" width="1.6" height="8" />
+        <rect x="0.4" y="-5" width="1.6" height="8" />
+      </g>
+    </>
+  );
+}
