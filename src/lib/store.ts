@@ -178,3 +178,8 @@ export function presold(showtimeId: string): Set<string> {
   presoldCache.set(showtimeId, set);
   return set;
 }
+
+export function isTaken(showtimeId: string, seatId: string, bookings: Booking[]) {
+  if (presold(showtimeId).has(seatId)) return true;
+  return bookings.some((b) => b.showtimeId === showtimeId && b.seats.includes(seatId));
+}
