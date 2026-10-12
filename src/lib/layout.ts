@@ -117,3 +117,18 @@ export function groundAt(x: number, z: number): number {
   for (const t of TIERS) if (z < t.zEnd) return t.y;
   return BACK_WALKWAY_Y;
 }
+
+/** Eye position + look-at point for "view from this seat". */
+export function seatEye(seat: Seat): { eye: [number, number, number]; look: [number, number, number] } {
+  const recliner = seat.category === "recliner";
+  const eye: [number, number, number] = [seat.x, seat.y + (recliner ? 1.02 : 1.16), seat.z + (recliner ? 0.22 : 0.08)];
+  return { eye, look: SCREEN_CENTER };
+}
+
+/** Axis-aligned seat blocks the walker collides with (xz only). */
+export interface Box2 {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+}
