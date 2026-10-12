@@ -170,3 +170,16 @@ const movieFragment = /* glsl */ `
     gl_FragColor = vec4(max(col, 0.0) * fade * 1.1, 1.0);
   }
 `;
+
+/** Rough JS twin of the shader so the room is lit with the colour on screen. */
+function screenLight(movie: Movie, t: number, out: THREE.Color) {
+  const k = Math.floor(t / SCENE_LENGTH);
+  const s = t - k * SCENE_LENGTH;
+  const fade = THREE.MathUtils.smoothstep(s, 0, 0.7) * (1 - THREE.MathUtils.smoothstep(s, SCENE_LENGTH - 0.8, SCENE_LENGTH));
+  const [c0, c1, c2] = movie.palette;
+  const kind = k % 3;
+  const mix = (a: number[], b: number[], w: number) => a.map((v, i) => v * (1 - w) + b[i] * w);
+  const base = kind === 0 ? mix(c1, c2, 0.35).map((v) => v * 0.75) : kind === 1 ? mix(c0, c2, 0.25).map((v) => v * 0.45) : mix(c0, c1, 0.5).map((v) => v * 0.55);
+  out.setRGB(base[0], base[1], base[2]);
+  return fade;
+}
