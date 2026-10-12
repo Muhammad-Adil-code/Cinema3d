@@ -160,3 +160,80 @@ function TopBar() {
     </header>
   );
 }
+
+function Dock({ touch }: { touch: boolean }) {
+  const nav = useCinema((s) => s.nav);
+  const view = useCinema((s) => s.view);
+  const houseLights = useCinema((s) => s.houseLights);
+  const videoUrl = useCinema((s) => s.videoUrl);
+  const setNav = useCinema((s) => s.setNav);
+  const setHouseLights = useCinema((s) => s.setHouseLights);
+  const setVideoUrl = useCinema((s) => s.setVideoUrl);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [fs, setFs] = useState(false);
+
+  useEffect(() => {
+    const on = () => setFs(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", on);
+    return () => document.removeEventListener("fullscreenchange", on);
+  }, []);
+
+  if (view.kind === "seat") return null;
+
+  const hint =
+    nav === "walk"
+      ? touch
+        ? "Joystick to walk · drag to look · tap a seat to sit · walk through an EXIT to leave"
+        : "W A S D to walk · Shift to run · drag to look · click a seat to sit · walk through an EXIT to leave"
+      : touch
+        ? "Drag to rotate · pinch to zoom · two fingers to pan · tap a seat"
+        : "Drag to rotate · scroll to zoom · right-drag to pan · click any seat";
+
+  return (
+    <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <p className="rounded-lg bg-black/50 px-3 py-1 text-center text-[11px] text-white/70 backdrop-blur">{hint}</p>
+      <div className="glass pointer-events-auto flex items-center gap-1 rounded-2xl p-1.5">
+        <div className="segmented">
+          {(["orbit", "walk"] as const).map((n) => (
+            <button key={n} onClick={() => setNav(n)} data-active={nav === n}>
+              {n === "orbit" ? <Rotate3d className="h-4 w-4" /> : <Footprints className="h-4 w-4" />}
+              {n === "orbit" ? "Orbit" : "Walk"}
+            </button>
+          ))}
+        </div>
+        <span className="mx-1 h-6 w-px bg-white/10" />
+        <DockButton active={houseLights} onClick={() => setHouseLights(!houseLights)} label={houseLights ? "Dim lights" : "Lights up"}>
+          {houseLights ? <LightbulbOff /> : <Lightbulb />}
+        </DockButton>
+        <DockButton
+          active={!!videoUrl}
+          label={videoUrl ? "Stop your video" : "Play your own video on the screen"}
+          onClick={() => {
+            if (videoUrl) setVideoUrl(null);
+            else fileRef.current?.click();
+          }}
+        >
+          {videoUrl ? <Square /> : <Clapperboard />}
+        </DockButton>
+        <DockButton
+          active={fs}
+          label="Full screen"
+          onClick={() => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())}
+        >
+          {fs ? <Minimize /> : <Maximize />}
+        </DockButton>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="video/*"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) setVideoUrl(URL.createObjectURL(f));
+            e.target.value = "";
+          }}
+        />
+      </div>
+    </div>
+  );
+}
