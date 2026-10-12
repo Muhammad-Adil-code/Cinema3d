@@ -311,3 +311,28 @@ function Door({ position, rotationY }: { position: [number, number, number]; rot
     </group>
   );
 }
+
+function BackWall() {
+  const beamGlow = useMemo(() => glowTexture(), []);
+  return (
+    <group>
+      <mesh position={[0, ROOM.height / 2, ROOM.maxZ]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[ROOM.maxX - ROOM.minX, ROOM.height]} />
+        <meshStandardMaterial color={WALL_COLOR} roughness={1} />
+      </mesh>
+      {/* projection booth window */}
+      <mesh position={[0, 8.2, ROOM.maxZ - 0.02]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[3.2, 1.2]} />
+        <meshStandardMaterial color="#0a1220" emissive="#18243a" roughness={0.1} metalness={0.6} />
+      </mesh>
+      <mesh position={[0, 8.2, ROOM.maxZ - 0.06]}>
+        <sphereGeometry args={[0.09, 16, 16]} />
+        <meshBasicMaterial color={[6, 6, 7]} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 8.2, ROOM.maxZ - 0.08]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[1.2, 1.2]} />
+        <meshBasicMaterial map={beamGlow} color="#cfe0ff" transparent blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
