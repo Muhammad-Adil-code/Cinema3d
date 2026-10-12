@@ -165,3 +165,9 @@ export interface Exit {
   /** Rotation that turns the door's local +Z to face into the room. */
   rotationY: number;
 }
+export const EXITS: Exit[] = [
+  { id: "front-left", x: ROOM.minX + 0.05, y: 0, z: FRONT_DOOR_Z, rotationY: Math.PI / 2 },
+  { id: "front-right", x: ROOM.maxX - 0.05, y: 0, z: FRONT_DOOR_Z, rotationY: -Math.PI / 2 },
+  { id: "back-left", x: -8.4, y: BACK_WALKWAY_Y, z: ROOM.maxZ - 0.05, rotationY: Math.PI },
+  { id: "back-right", x: 8.4, y: BACK_WALKWAY_Y, z: ROOM.maxZ - 0.05, rotationY: Math.PI },
+];
