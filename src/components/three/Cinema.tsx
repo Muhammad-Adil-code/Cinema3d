@@ -47,3 +47,42 @@ export function Lights({ floor = 0 }: { floor?: number }) {
     </>
   );
 }
+
+export default function Cinema({ onReady }: { onReady?: () => void }) {
+  const mobile = isMobile();
+  const [dpr, setDpr] = useState(mobile ? 1.25 : 1.6);
+  const [post, setPost] = useState(true);
+  const portrait = typeof window !== "undefined" && window.innerHeight > window.innerWidth;
+
+  return (
+    <Canvas
+      dpr={dpr}
+      camera={{ fov: portrait ? 72 : 55, near: 0.05, far: 90, position: [0, 6.2, 8.4] }}
+      gl={{ antialias: !post, powerPreference: "high-performance" }}
+      onCreated={() => requestAnimationFrame(() => onReady?.())}
+      onPointerMissed={() => useCinema.getState().setInspect(null)}
+    >
+      <color attach="background" args={["#030305"]} />
+      <PerformanceMonitor
+        onDecline={() => {
+          setDpr(1);
+          setPost(false);
+        }}
+        onIncline={() => setDpr((d) => Math.min(d + 0.25, mobile ? 1.5 : 2))}
+        flipflops={3}
+      />
+      <Lights />
+      <Suspense fallback={null}>
+        <Room />
+        <Screen />
+        <Seats />
+      </Suspense>
+      <CameraRig />
+      <WalkControls />
+      <PanelOffset />
+      {post && (
+        <Effects mobile={mobile} />
+      )}
+    </Canvas>
+  );
+}
