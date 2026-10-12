@@ -104,3 +104,8 @@ export interface Tier {
 
 const lastRow = ROWS[ROWS.length - 1];
 export const BACK_WALKWAY_Y = lastRow.y + RISE;
+
+export const TIERS: Tier[] = [
+  ...ROWS.map((r) => ({ zStart: r.z - r.depth / 2, zEnd: r.z + r.depth / 2, y: r.y })),
+  { zStart: lastRow.z + lastRow.depth / 2, zEnd: ROOM.maxZ, y: BACK_WALKWAY_Y },
+];
