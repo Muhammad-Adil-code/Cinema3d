@@ -161,3 +161,20 @@ function mulberry32(seed: number) {
 }
 
 const presoldCache = new Map<string, Set<string>>();
+
+/** Seats "sold" to other customers — deterministic per showtime, denser in the sweet spot. */
+export function presold(showtimeId: string): Set<string> {
+  let set = presoldCache.get(showtimeId);
+  if (set) return set;
+  const rand = mulberry32(hash(showtimeId));
+  set = new Set();
+  for (const s of SEATS) {
+    const centre = 1 - Math.min(Math.abs(s.x) / 9, 1);
+    const sweet = s.row >= "E" && s.row <= "I" ? 0.18 : 0;
+    const p = 0.12 + centre * 0.22 + sweet;
+    // Sold seats come in small clumps (couples, families).
+    if (rand() < p) set.add(s.id);
+  }
+  presoldCache.set(showtimeId, set);
+  return set;
+}
