@@ -237,3 +237,11 @@ function Dock({ touch }: { touch: boolean }) {
     </div>
   );
 }
+
+function DockButton({ active, onClick, label, children }: { active: boolean; onClick: () => void; label: string; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick} title={label} aria-label={label} className="icon-btn" data-active={active}>
+      {children}
+    </button>
+  );
+}
