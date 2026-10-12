@@ -242,3 +242,45 @@ function collide(p: THREE.Vector3) {
     }
   }
 }
+
+/** Keyboard → walkInput. Escape leaves a seat view / clears the inspected seat. */
+export function useWalkKeys() {
+  useEffect(() => {
+    const keys = new Set<string>();
+    const sync = () => {
+      walkInput.forward = (keys.has("w") || keys.has("arrowup") ? 1 : 0) - (keys.has("s") || keys.has("arrowdown") ? 1 : 0);
+      walkInput.strafe = (keys.has("d") || keys.has("arrowright") ? 1 : 0) - (keys.has("a") || keys.has("arrowleft") ? 1 : 0);
+      walkInput.sprint = keys.has("shift");
+    };
+    const typing = (e: KeyboardEvent) => e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+    const down = (e: KeyboardEvent) => {
+      if (typing(e)) return;
+      const k = e.key.toLowerCase();
+      if (k === "escape") {
+        const st = useCinema.getState();
+        if (st.view.kind === "seat") st.setView({ kind: "overview" });
+        else st.setInspect(null);
+        return;
+      }
+      keys.add(k);
+      sync();
+    };
+    const up = (e: KeyboardEvent) => {
+      keys.delete(e.key.toLowerCase());
+      sync();
+    };
+    const blur = () => {
+      keys.clear();
+      sync();
+    };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
+    };
+  }, []);
+}
+
