@@ -46,3 +46,27 @@ function standardSeat() {
   ])!;
   return { fabric, frame };
 }
+
+function reclinerSeat() {
+  const tilt = 0.32;
+  const fabric = mergeGeometries([
+    rbox(0.66, 0.2, 0.62, 0.07, 0, 0.42, -0.02),
+    rbox(0.66, 0.75, 0.22, 0.08, 0, 0.86, 0.36, tilt),
+    rbox(0.5, 0.22, 0.16, 0.07, 0, 1.32, 0.52, tilt),
+    rbox(0.64, 0.3, 0.1, 0.04, 0, 0.2, -0.34),
+  ])!;
+  const frame = mergeGeometries([
+    rbox(0.14, 0.5, 0.82, 0.05, -0.41, 0.3, 0.04),
+    rbox(0.14, 0.5, 0.82, 0.05, 0.41, 0.3, 0.04),
+    box(0.7, 0.12, 0.62, 0, 0.06, 0.05),
+    cup(-0.41, 0.56, -0.25),
+    cup(0.41, 0.56, -0.25),
+  ])!;
+  return { fabric, frame };
+}
+
+const EXPLORE_COLOR = { standard: "#6e0f1c", premium: "#8c1426", recliner: "#4a1f3d" } as const;
+const AVAILABLE_COLOR = { standard: "#a3263a", premium: "#c9343f", recliner: "#8a49b5" } as const;
+const TAKEN = "#2a2a31";
+const SELECTED = "#f5c451";
+const HOVER = "#ff9a6a";
