@@ -90,3 +90,28 @@ export function glowTexture() {
   glow = new THREE.CanvasTexture(c);
   return glow;
 }
+
+/**
+ * Box with UVs in world metres (scaled), so a single repeating texture tiles
+ * consistently across many boxes of different sizes once they are merged.
+ */
+export function worldBox(w: number, h: number, d: number, x: number, y: number, z: number, uvScale = 0.5) {
+  const geo = new THREE.BoxGeometry(w, h, d);
+  geo.translate(x, y, z);
+  const pos = geo.attributes.position;
+  const nor = geo.attributes.normal;
+  const uv = geo.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    const nx = Math.abs(nor.getX(i));
+    const ny = Math.abs(nor.getY(i));
+    const px = pos.getX(i);
+    const py = pos.getY(i);
+    const pz = pos.getZ(i);
+    if (ny > 0.5) uv.setXY(i, px * uvScale, pz * uvScale);
+    else if (nx > 0.5) uv.setXY(i, pz * uvScale, py * uvScale);
+    else uv.setXY(i, px * uvScale, py * uvScale);
+  }
+  return geo;
+}
+
+let lobby: THREE.CanvasTexture | null = null;
