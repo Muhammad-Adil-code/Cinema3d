@@ -438,3 +438,28 @@ function Ceiling() {
     </group>
   );
 }
+
+/** Glowing row letters at both outer ends of each row, facing the back of the hall. */
+function RowLetters() {
+  return (
+    <group>
+      {ROWS.map((r) =>
+        [-1, 1].map((s) => {
+          const last = s < 0 ? r.seats[0] : r.seats[r.seats.length - 1];
+          return (
+            <Text
+              key={r.letter + s}
+              position={[last.x + s * (r.recliner ? 0.7 : 0.5), r.y + 1.05, last.z + 0.1]}
+              fontSize={0.26}
+              anchorX="center"
+              anchorY="middle"
+            >
+              {r.letter}
+              <meshBasicMaterial color={[1.8, 1.25, 0.4]} toneMapped={false} />
+            </Text>
+          );
+        }),
+      )}
+    </group>
+  );
+}
