@@ -347,3 +347,32 @@ function curtainGeometry(width: number, height: number, folds: number, depth: nu
   geo.computeVertexNormals();
   return geo;
 }
+
+function FrontWall() {
+  const side = useMemo(() => curtainGeometry(2.8, 9.8, 7, 0.09), []);
+  const valance = useMemo(() => curtainGeometry(22, 1.1, 40, 0.06), []);
+  const velvet = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        color: "#5a0b14",
+        roughness: 0.85,
+        sheen: 1,
+        sheenColor: new THREE.Color("#ff5a6e"),
+        sheenRoughness: 0.45,
+        side: THREE.DoubleSide,
+      }),
+    [],
+  );
+  const curtainX = SCREEN.width / 2 + 1.55;
+  return (
+    <group>
+      <mesh position={[0, ROOM.height / 2, ROOM.minZ]}>
+        <planeGeometry args={[ROOM.maxX - ROOM.minX, ROOM.height]} />
+        <meshStandardMaterial color="#050407" roughness={1} />
+      </mesh>
+      <mesh geometry={side} material={velvet} position={[-curtainX, STAGE.height + 4.9, SCREEN.z + 0.5]} />
+      <mesh geometry={side} material={velvet} position={[curtainX, STAGE.height + 4.9, SCREEN.z + 0.5]} />
+      <mesh geometry={valance} material={velvet} position={[0, 9.95, SCREEN.z + 0.75]} />
+    </group>
+  );
+}
