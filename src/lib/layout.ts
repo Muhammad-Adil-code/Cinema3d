@@ -109,3 +109,11 @@ export const TIERS: Tier[] = [
   ...ROWS.map((r) => ({ zStart: r.z - r.depth / 2, zEnd: r.z + r.depth / 2, y: r.y })),
   { zStart: lastRow.z + lastRow.depth / 2, zEnd: ROOM.maxZ, y: BACK_WALKWAY_Y },
 ];
+
+/** Floor height under a point — what you stand on when walking. */
+export function groundAt(x: number, z: number): number {
+  if (z < STAGE.front) return Math.abs(x) < STAGE.halfWidth ? STAGE.height : 0;
+  if (z < TIERS[0].zStart) return 0;
+  for (const t of TIERS) if (z < t.zEnd) return t.y;
+  return BACK_WALKWAY_Y;
+}
