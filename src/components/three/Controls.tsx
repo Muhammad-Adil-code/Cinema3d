@@ -92,3 +92,21 @@ export function CameraRig() {
 
   return <CameraControls ref={ref} enabled={!walking} makeDefault />;
 }
+
+/** On wide screens the booking panel covers the right ~400px; shift the projection so the hall stays centred in the free area. */
+export function PanelOffset() {
+  const mode = useCinema((s) => s.mode);
+  const seatView = useCinema((s) => s.view.kind === "seat");
+  const { camera, size } = useThree();
+  useEffect(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    // Not while sitting: an off-centre projection would skew the "view from this seat".
+    if (mode === "select" && !seatView && size.width >= 1024) cam.setViewOffset(size.width, size.height, 200, 0, size.width, size.height);
+    else cam.clearViewOffset();
+  }, [mode, seatView, size, camera]);
+  return null;
+}
+
+const EYE = 1.62;
+const RADIUS = 0.16;
+const SPEED = 2.6;
