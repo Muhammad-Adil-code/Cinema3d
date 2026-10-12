@@ -214,3 +214,31 @@ export function WalkControls() {
 
   return null;
 }
+
+function collide(p: THREE.Vector3) {
+  p.x = THREE.MathUtils.clamp(p.x, ROOM.minX + 0.35, ROOM.maxX - 0.35);
+  p.z = THREE.MathUtils.clamp(p.z, ROOM.minZ + 0.9, ROOM.maxZ - 0.35);
+  for (const b of OBSTACLES) {
+    const cx = THREE.MathUtils.clamp(p.x, b.minX, b.maxX);
+    const cz = THREE.MathUtils.clamp(p.z, b.minZ, b.maxZ);
+    const ddx = p.x - cx;
+    const ddz = p.z - cz;
+    const d2 = ddx * ddx + ddz * ddz;
+    if (d2 >= RADIUS * RADIUS) continue;
+    if (d2 > 1e-8) {
+      const d = Math.sqrt(d2);
+      p.x = cx + (ddx / d) * RADIUS;
+      p.z = cz + (ddz / d) * RADIUS;
+    } else {
+      // Centre is inside the block: push out along the shallowest axis.
+      const outs = [
+        [b.minX - RADIUS - p.x, 0],
+        [b.maxX + RADIUS - p.x, 0],
+        [0, b.minZ - RADIUS - p.z],
+        [0, b.maxZ + RADIUS - p.z],
+      ].sort((a, c) => Math.abs(a[0] + a[1]) - Math.abs(c[0] + c[1]));
+      p.x += outs[0][0];
+      p.z += outs[0][1];
+    }
+  }
+}
