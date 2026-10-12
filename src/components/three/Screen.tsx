@@ -319,3 +319,133 @@ export function Screen() {
     </group>
   );
 }
+
+function ProjectorBeam() {
+  const { beamGeo, dust } = useMemo(() => {
+    const apex = new THREE.Vector3(...PROJECTOR);
+    const hw = SCREEN.width / 2 - 0.1;
+    const zEnd = SCREEN.z + 0.4;
+    const corners = [
+      new THREE.Vector3(-hw, SCREEN.bottom + 0.1, zEnd),
+      new THREE.Vector3(hw, SCREEN.bottom + 0.1, zEnd),
+      new THREE.Vector3(hw, SCREEN.bottom + SCREEN.height - 0.1, zEnd),
+      new THREE.Vector3(-hw, SCREEN.bottom + SCREEN.height - 0.1, zEnd),
+    ];
+    const pos: number[] = [];
+    const along: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      const a = corners[i];
+      const b = corners[(i + 1) % 4];
+      pos.push(apex.x, apex.y, apex.z, a.x, a.y, a.z, b.x, b.y, b.z);
+      along.push(0, 1, 1);
+    }
+    const beamGeo = new THREE.BufferGeometry();
+    beamGeo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    beamGeo.setAttribute("along", new THREE.Float32BufferAttribute(along, 1));
+
+    const n = 700;
+    const dpos = new Float32Array(n * 3);
+    const seeds = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const t = Math.pow(Math.random(), 0.7) * 0.95 + 0.03;
+      const u = Math.random() * 2 - 1;
+      const v = Math.random();
+      const target = new THREE.Vector3(u * hw, SCREEN.bottom + v * SCREEN.height, zEnd);
+      const p = apex.clone().lerp(target, t);
+      dpos.set([p.x, p.y, p.z], i * 3);
+      seeds[i] = Math.random() * 100;
+    }
+    const dust = new THREE.BufferGeometry();
+    dust.setAttribute("position", new THREE.BufferAttribute(dpos, 3));
+    dust.setAttribute("seed", new THREE.BufferAttribute(seeds, 1));
+    return { beamGeo, dust };
+  }, []);
+
+  const beamMat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        toneMapped: false,
+        uniforms: { uColor: { value: new THREE.Color() }, uTime: { value: 0 }, uLevel: { value: 1 } },
+        vertexShader: /* glsl */ `
+          attribute float along;
+          varying float vAlong;
+          varying vec3 vWorld;
+          void main() {
+            vAlong = along;
+            vec4 w = modelMatrix * vec4(position, 1.0);
+            vWorld = w.xyz;
+            gl_Position = projectionMatrix * viewMatrix * w;
+          }`,
+        fragmentShader: /* glsl */ `
+          uniform vec3 uColor; uniform float uTime; uniform float uLevel;
+          varying float vAlong; varying vec3 vWorld;
+          float hash(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
+          float noise(vec3 p) {
+            vec3 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+            return mix(mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x), mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+                       mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x), mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+          }
+          void main() {
+            float smoke = 0.55 + 0.45 * noise(vWorld * 0.7 + vec3(0.0, uTime * 0.15, uTime * 0.05));
+            float a = 0.045 * (1.0 - vAlong * 0.75) * smoke * uLevel;
+            gl_FragColor = vec4(uColor * a * 3.0, a);
+          }`,
+      }),
+    [],
+  );
+
+  const dustMat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        toneMapped: false,
+        uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color() }, uPixelRatio: { value: 1 }, uLevel: { value: 1 } },
+        vertexShader: /* glsl */ `
+          attribute float seed;
+          uniform float uTime; uniform float uPixelRatio;
+          varying float vTw;
+          void main() {
+            vec3 p = position + vec3(sin(uTime * 0.21 + seed) * 0.12, sin(uTime * 0.17 + seed * 1.7) * 0.15, cos(uTime * 0.13 + seed) * 0.12);
+            vTw = 0.5 + 0.5 * sin(uTime * 1.3 + seed * 5.0);
+            vec4 mv = modelViewMatrix * vec4(p, 1.0);
+            gl_PointSize = 1.6 * uPixelRatio * (8.0 / -mv.z) + 0.5;
+            gl_Position = projectionMatrix * mv;
+          }`,
+        fragmentShader: /* glsl */ `
+          uniform vec3 uColor; uniform float uLevel;
+          varying float vTw;
+          void main() {
+            float d = length(gl_PointCoord - 0.5);
+            float a = smoothstep(0.5, 0.1, d) * vTw * 0.55 * uLevel;
+            gl_FragColor = vec4((uColor + 0.5) * a, a);
+          }`,
+      }),
+    [],
+  );
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    const flicker = 0.93 + 0.07 * Math.sin(t * 47) * Math.sin(t * 13);
+    const level = lighting.screenLevel * (1 - lighting.house * 0.7) * flicker;
+    beamMat.uniforms.uTime.value = t;
+    beamMat.uniforms.uColor.value.copy(lighting.screen).addScalar(0.15);
+    beamMat.uniforms.uLevel.value = level;
+    dustMat.uniforms.uTime.value = t;
+    dustMat.uniforms.uColor.value.copy(lighting.screen);
+    dustMat.uniforms.uLevel.value = level;
+    dustMat.uniforms.uPixelRatio.value = state.gl.getPixelRatio();
+  });
+
+  return (
+    <group>
+      <mesh geometry={beamGeo} material={beamMat} frustumCulled={false} />
+      <points geometry={dust} material={dustMat} frustumCulled={false} />
+    </group>
+  );
+}
