@@ -193,3 +193,7 @@ export function takenSet(showtimeId: string, bookings: Booking[]): Set<string> {
 export function sortSeats(ids: string[]) {
   return [...ids].sort((a, b) => (a[0] === b[0] ? parseInt(a.slice(1)) - parseInt(b.slice(1)) : a.localeCompare(b)));
 }
+
+export function totalFor(ids: string[]) {
+  return ids.reduce((sum, id) => sum + PRICES[SEAT_BY_ID.get(id)?.category ?? "standard"], 0);
+}
