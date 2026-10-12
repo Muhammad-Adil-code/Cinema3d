@@ -115,3 +115,50 @@ export function worldBox(w: number, h: number, d: number, x: number, y: number, 
 }
 
 let lobby: THREE.CanvasTexture | null = null;
+/** What you see through an open exit door: a warmly lit corridor. */
+export function lobbyTexture() {
+  if (lobby) return lobby;
+  const [c, g] = canvas(256);
+  const w = 256;
+  // back wall + ceiling light
+  const wall = g.createLinearGradient(0, 0, 0, w);
+  wall.addColorStop(0, "#f3d6a6");
+  wall.addColorStop(0.6, "#b58a5c");
+  wall.addColorStop(1, "#5a3a24");
+  g.fillStyle = wall;
+  g.fillRect(0, 0, w, w);
+  // corridor in perspective: side walls and floor converging to a lit end
+  g.fillStyle = "#6b4a33";
+  g.beginPath();
+  g.moveTo(0, 0);
+  g.lineTo(90, 70);
+  g.lineTo(90, 170);
+  g.lineTo(0, w);
+  g.fill();
+  g.beginPath();
+  g.moveTo(w, 0);
+  g.lineTo(166, 70);
+  g.lineTo(166, 170);
+  g.lineTo(w, w);
+  g.fill();
+  g.fillStyle = "#3a2a22";
+  g.beginPath();
+  g.moveTo(0, w);
+  g.lineTo(90, 170);
+  g.lineTo(166, 170);
+  g.lineTo(w, w);
+  g.fill();
+  const end = g.createRadialGradient(128, 110, 4, 128, 110, 70);
+  end.addColorStop(0, "#fff4dc");
+  end.addColorStop(1, "rgba(255,230,190,0)");
+  g.fillStyle = end;
+  g.fillRect(90, 70, 76, 100);
+  // ceiling lights
+  for (const y of [18, 40, 58]) {
+    g.fillStyle = "rgba(255,248,230,0.9)";
+    g.fillRect(128 - (70 - y) * 0.6, y, (70 - y) * 1.2, 3);
+  }
+  lobby = new THREE.CanvasTexture(c);
+  lobby.colorSpace = THREE.SRGBColorSpace;
+  return lobby;
+}
