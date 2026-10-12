@@ -207,3 +207,30 @@ function SeatMarkers() {
     </group>
   );
 }
+
+function HoverTag() {
+  const hovered = useCinema((s) => s.hovered);
+  const mode = useCinema((s) => s.mode);
+  const showtimeId = useCinema((s) => s.showtimeId);
+  const bookings = useCinema((s) => s.bookings);
+  const view = useCinema((s) => s.view);
+  const selected = useCinema((s) => s.selected);
+  if (!hovered || view.kind === "seat") return null;
+  const s = SEAT_BY_ID.get(hovered);
+  if (!s) return null;
+  const taken = takenSet(showtimeId, bookings).has(s.id);
+  return (
+    <Html position={[s.x, s.y + 1.35, s.z]} center zIndexRange={[30, 0]} pointerEvents="none" wrapperClass="no-pe" style={{ pointerEvents: "none" }}>
+      <div className="seat-tag">
+        <strong>{s.id}</strong>
+        <span>
+          {CATEGORY_LABEL[s.category]} · {pkr(PRICES[s.category])}
+        </span>
+        {mode === "select" && (
+          <em className={taken ? "taken" : ""}>{taken ? "Already booked" : selected.includes(s.id) ? "Selected · click to remove" : "Click to select"}</em>
+        )}
+        {mode === "explore" && <em>Click for options</em>}
+      </div>
+    </Html>
+  );
+}
